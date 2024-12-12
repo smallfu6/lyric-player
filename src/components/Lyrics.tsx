@@ -27,64 +27,62 @@ export default function LyricsDisplay() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentLyric((prev) => (prev + 1) % lyrics.length);
-    }, 5000);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  // 动态获取当前、上一行、下一行歌词
-  const getPreviousLyric = () => lyrics[(currentLyric - 1 + lyrics.length) % lyrics.length];
-  const getNextLyric = () => lyrics[(currentLyric + 1) % lyrics.length];
+  // 获取歌词的索引（前3行、当前行、后3行）
+  const getLyricAt = (index) => lyrics[(currentLyric + index + lyrics.length) % lyrics.length];
 
   return (
     <div className={styles.lyricsContainer}>
-      {/* 左侧圆形装饰 */}
-      <div className={styles.leftCircle}>
-        <div className={styles.leftCircleInner}></div>
-      </div>
-
-      {/* 歌词区域 */}
       <div className={styles.lyricsSection}>
-        {/* 当前歌词 */}
+        {/* 上面 3 行歌词 */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            className={`${styles.lyric} ${styles.previousLyric}`}
+            key={`previous-${i}`}
+            initial={{ opacity: 0, y: 20}}
+            animate={{ opacity: 0.5, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{ top: `${(i + 1) * 15}%` }} 
+          >
+            {getLyricAt(i - 3)}
+          </motion.div>
+        ))}
+
+        {/* 当前歌词（中间） */}
         <AnimatePresence mode="wait">
           <motion.div
+            className={`${styles.lyric} ${styles.currentLyric}`}
             key={currentLyric}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{
               opacity: 0,
-              x: 50, // 向右移动
-              y: -50, // 向上移动
+              x: 50,
+              y: -50,
               transition: { duration: 0.5 }
             }}
-            className={styles.currentLyric}
           >
-            <h1 className={styles.currentLyricText}>{lyrics[currentLyric]}</h1>
+            <h1 className={styles.currentLyricText}>{getLyricAt(0)}</h1>
           </motion.div>
         </AnimatePresence>
 
-        {/* 下一行歌词 */}
-        <motion.div
-          className={styles.nextLyric}
-          key={`next-${currentLyric}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-        >
-          {getNextLyric()}
-        </motion.div>
-      </div>
+        {/* 下面 3 行歌词 */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            className={`${styles.lyric} ${styles.nextLyric}`}
+            key={`next-${i}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 0.5, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            style={{ top: `${(i + 4) *15}%` }} 
 
-      {/* 右侧圆形装饰 */}
-      <div className={styles.rightCircle}>
-        <motion.div
-          className={styles.previousLyric}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          key={`prev-${currentLyric}`}
-        >
-          {getPreviousLyric()}
-        </motion.div>
-        <div className={styles.rightCircleInner}></div>
+          >
+            {getLyricAt(i + 1)}
+          </motion.div>
+        ))}
       </div>
     </div>
   );
