@@ -1,0 +1,89 @@
+/* 主容器样式 */
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: black;
+}
+
+/* 歌词展示区域的外框 */
+.lyricsContainer {
+  position: relative;
+  width: 100%;
+  /* max-width: 1024px; */
+  aspect-ratio: 16 / 8;
+  background-color: #7FD4D4;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  display: flex;
+}
+
+/* 左侧圆形装饰 */
+.leftCircle {
+  width: 33.33%;
+  position: relative;
+}
+.leftCircleInner {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  width: 80%;
+  aspect-ratio: 1 / 1;
+  background-color: black;
+  border-radius: 50%;
+}
+
+/* 右侧圆形装饰 */
+.rightCircle {
+  width: 33.33%;
+  position: relative;
+}
+.rightCircleInner {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  width: 80%;
+  aspect-ratio: 1 / 1;
+  background-color: black;
+  border-radius: 50%;
+}
+
+/* 中间歌词区域 */
+.lyricsSection {
+  width: 33.33%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* 上一行歌词 */
+.previousLyric {
+  position: absolute;
+  top: 5rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 3rem; /* 相当于 text-sm */
+}
+
+/* 当前歌词 */
+.currentLyric {
+  text-align: center;
+  padding: 0 1rem;
+}
+.currentLyricText {
+  font-size: 4rem; /* 相当于 text-3xl */
+  font-weight: bold;
+  color: black;
+  white-space: pre-wrap;
+}
+
+.nextLyric {
+  font-size: 3rem;
+  color: #aaa;
+}
