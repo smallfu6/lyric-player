@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import styles from './Lyrics.module.css';
+import styles from './LyricsManage.module.css';
 import { ParsedLyric } from '../utils/types';
 import { parseLRC } from '../utils/lrcParser';
 
 
-export default function Lyrics({ getLyric }:{ getLyric: () => Promise<any>;}) {
+export default function LyricsManage({ getLyric }:{ getLyric: () => Promise<any>;}) {
   const [lyrics, setLyrics] = useState<ParsedLyric[]>([]);
   const [currentLyricIndex, setCurrentLyricIndex] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -51,7 +51,7 @@ export default function Lyrics({ getLyric }:{ getLyric: () => Promise<any>;}) {
     return () => clearInterval(interval); // 清理定时器
   }, [lyrics, playbackSpeed]); // 当歌词数据或播放速度变化时重新执行
 
-  const lineSpacing = 150; // 行间距
+  const lineSpacing = 50; // 行间距
 
   return (
     <div className={styles.container}>

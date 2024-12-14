@@ -1,0 +1,49 @@
+/* Manage.module.css */
+
+/* 页面外层容器 */
+.container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background-color: #f7f7f7;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+
+/* 按钮样式 */
+.playerBtn {
+    border-radius: 8px;
+    padding: 6px 10px;
+    background-color: #40a9ff;
+    color: white;
+    margin-left: 20px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.playerBtn:hover {
+    background-color: #1890ff;
+}
+
+.Title {
+    margin-bottom: 10px;
+    font-weight: bold;
+} 
+
+.playerContainer {
+    margin-top: 20px;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+
+.pngBtn {
+    border-radius: 8px;
+    padding: 6px 10px;
+    background-color: #40a9ff;
+    color: white;
+    margin-left: 20px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}

@@ -1,66 +1,34 @@
-/* 歌词容器的外层，居中对齐 */
-.lyricsContainer {
+.container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+.lyricsWrapper {
+  width: 100%;
+  margin-top: -200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.lyricLine {
   position: absolute;
   width: 100%;
-  height: 100%; /* 调整高度，以便显示7行歌词 */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #050505;
-  border-radius: 0.5rem;
-  padding: 20px;
-  box-sizing: border-box;
   text-align: center;
+  color: #4169E1; /* 蓝色 */
 }
 
-/* 歌词的外框 */
-.lyricsSection {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-}
-
-/* 每行歌词的基本样式 */
-.lyric {
-  /* position: absolute; */
-  width: 100%;
-  opacity: 0; /* 初始不显示 */
-  transition: opacity 0.5s ease-in-out;
-  font-size: 2rem;
-  font-family: Arial, sans-serif;
-}
-
-/* 上面三行歌词 */
-.previousLyric {
-  font-size: 3.3rem;
-  color: #1d60e7;
-  top: 40%; /* 当前歌词居中显示 */
-  opacity: 0.5;
-  transition: opacity 0.5s ease-in-out;
-}
-
-/* 当前歌词（中间） */
 .currentLyric {
-  font-size: 40px;
+  font-size: 5.5rem;
   font-weight: bold;
-  opacity: 1;
-  /* color: #ffffff;  */
-  color: #1d60e7;
-  transition: opacity 0.5s ease-in-out;
-  top: 50%; /* 当前歌词居中显示 */
-  transform: translateY(-50%); /* 精确居中 */
 }
 
-/* 下面三行歌词 */
-.nextLyric {
-  font-size: 3.3rem;
-  color: #1d60e7;
-  opacity: 0.7;
-  top: 60%; /* 当前歌词居中显示 */
-  transition: opacity 0.5s ease-in-out;
+.otherLyric {
+  font-size: 5.3rem;
 }
+

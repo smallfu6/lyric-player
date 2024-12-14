@@ -1,0 +1,41 @@
+/* 主容器，确保内容居中并充满屏幕 */
+.container {
+    height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000000;
+    overflow: hidden;
+    padding: 0 1rem; /* 增加左右间距，避免内容超出屏幕 */
+  }
+  
+  /* 歌词容器，居中显示并确保适配屏幕 */
+  .lyricsWrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1rem;
+    position: relative;
+  }
+  
+  /* 歌词行样式 */
+  .lyricLine {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: #4169E1; /* 蓝色 */
+    font-size: 2rem; /* 移动端字体大小调整 */
+    line-height: 1.5;
+  }
+  
+  /* 当前歌词的样式，字体加粗并放大 */
+  .currentLyric {
+    font-size: 1.6rem; /* 当前歌词字体稍大 */
+    font-weight: bold;
+  }
+  
+  /* 其他歌词的样式 */
+  .otherLyric {
+    font-size: 1.5rem; /* 其他歌词字体 */
+  }
