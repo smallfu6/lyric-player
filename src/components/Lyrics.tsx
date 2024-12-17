@@ -1,78 +1,89 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './Lyrics.module.css';
 import { ParsedLyric } from '../utils/types';
 import { parseLRC } from '../utils/lrcParser';
 
-
-export default function Lyrics({ getLyric }:{ getLyric: () => Promise<any>;}) {
+export default function Lyrics({ getLyric }: { getLyric: () => Promise<any>; }) {
   const [lyrics, setLyrics] = useState<ParsedLyric[]>([]);
   const [currentLyricIndex, setCurrentLyricIndex] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [currentProgress, setCurrentProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const requestRef = useRef<number>();
+  const previousTimeRef = useRef<number>();
 
-  // 请求歌词数据
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    try {
       const response = await getLyric();
       if (!response.success) return;
       const parsedLyrics = parseLRC(response.data.lyric);
       setLyrics(parsedLyrics);
       setPlaybackSpeed(response.data.speed);
-      setCurrentProgress(response.data.progress); // 使用后端的进度
-    };
+      setCurrentProgress(response.data.progress);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching lyrics:', error);
+    }
+  }, [getLyric]);
 
-    // 初次加载时请求一次数据
-    fetchData();
-
-    // 每 1 秒请求一次数据，获取最新的进度
-    const interval = setInterval(fetchData, 1000);
-    return () => clearInterval(interval); // 清理定时器
-  }, [getLyric]); // 当 getLyric 改变时重新执行
-
-  // 每次歌词数据或播放进度发生变化时更新当前歌词
   useEffect(() => {
-    if (lyrics.length === 0) return;
+    fetchData();
+    const interval = setInterval(fetchData, 1000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-    const interval = setInterval(() => {
-      // 每 100 毫秒更新一次进度条和歌词
-      setCurrentProgress((prev) => {
-        const newProgress = prev + 0.1 * playbackSpeed;
-        // 根据当前进度计算歌词索引
+  const animate = useCallback((time: number) => {
+    if (previousTimeRef.current !== undefined) {
+      const deltaTime = time - previousTimeRef.current;
+      setCurrentProgress((prevProgress) => {
+        const newProgress = prevProgress + (deltaTime / 1000) * playbackSpeed;
         const nextLyricIndex = lyrics.findIndex(lyric => lyric.time > newProgress);
         
-        if (nextLyricIndex !== -1) {
-          setCurrentLyricIndex(nextLyricIndex - 1); // 设置当前歌词的索引
+        if (nextLyricIndex !== -1 && nextLyricIndex - 1 !== currentLyricIndex) {
+          setCurrentLyricIndex(nextLyricIndex - 1);
         }
 
         return newProgress;
       });
-    }, 100); // 每 100 毫秒更新一次进度条
-    return () => clearInterval(interval); // 清理定时器
-  }, [lyrics, playbackSpeed]); // 当歌词数据或播放速度变化时重新执行
+    }
+    previousTimeRef.current = time;
+    requestRef.current = requestAnimationFrame(animate);
+  }, [lyrics, playbackSpeed, currentLyricIndex]);
 
-  const lineSpacing = 150; // 行间距
+  useEffect(() => {
+    requestRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [animate]);
+
+  const lineSpacing = 120;
+  const visibleLines = 5;
+
+  if (isLoading) {
+    return <div className={styles.loading}>Loading lyrics...</div>;
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.lyricsWrapper}>
         <AnimatePresence initial={false}>
-          {/* 显示当前和前后几行歌词 */}
-          {lyrics.slice(currentLyricIndex, currentLyricIndex + 5).map((lyric, index) => {
+          {lyrics.slice(Math.max(0, currentLyricIndex - 2), currentLyricIndex + visibleLines - 2).map((lyric, index) => {
+            const actualIndex = index + Math.max(0, currentLyricIndex - 2);
             return (
               <motion.div
                 key={lyric.time}
-                className={`${styles.lyricLine} ${index === 2 ? styles.currentLyric : styles.otherLyric}`}
-                initial={index === 4 ? { opacity: 0, y: lineSpacing * 3 } : { opacity: 0, y: lineSpacing }}
+                className={`${styles.lyricLine} ${actualIndex === currentLyricIndex ? styles.currentLyric : styles.otherLyric}`}
+                initial={{ opacity: 0, y: lineSpacing * 2 }}
                 animate={{
-                  opacity: index === 0 ? 0 : index === 2 ? 1 : 0.7,
-                  y: `${(index - 2) * lineSpacing}px`, // 根据当前索引调整歌词的位置
-                  scale: index === 2 ? 1.1 : 1, // 当前歌词放大一点
+                  opacity: actualIndex === currentLyricIndex ? 1 : 0.7,
+                  y: (actualIndex - currentLyricIndex) * lineSpacing,
+                  scale: actualIndex === currentLyricIndex ? 1.1 : 1,
                 }}
-                exit={index === 0 ?
-                  { opacity: 0, y: -lineSpacing, transition: { duration: 0.5 } } :
-                  { opacity: 0, y: -lineSpacing }
-                }
+                exit={{ opacity: 0, y: -lineSpacing * 2, transition: { duration: 0.3 } }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
               >
                 {lyric.text}
@@ -84,3 +95,4 @@ export default function Lyrics({ getLyric }:{ getLyric: () => Promise<any>;}) {
     </div>
   );
 }
+
