@@ -1,86 +1,212 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './LyricsManage.module.css';
 import { ParsedLyric } from '../utils/types';
 import { parseLRC } from '../utils/lrcParser';
+import { getLyric, setLyric } from '../pages/api/lyrics'; 
 
-
-export default function LyricsManage({ getLyric }:{ getLyric: () => Promise<any>;}) {
+export default function LyricsManage() {
   const [lyrics, setLyrics] = useState<ParsedLyric[]>([]);
   const [currentLyricIndex, setCurrentLyricIndex] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [currentProgress, setCurrentProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(0);
+  const [isProgressBarDragging, setIsProgressBarDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasLyrics, setHasLyrics] = useState(false);
 
-  // 请求歌词数据
-  useEffect(() => {
-    const fetchData = async () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const lineHeight = 60;
+
+  const fetchLyricData = useCallback(async () => {
+    try {
       const response = await getLyric();
-      if (!response.success) return;
-      const parsedLyrics = parseLRC(response.data.lyric);
-      setLyrics(parsedLyrics);
-      setPlaybackSpeed(response.data.speed);
-      setCurrentProgress(response.data.progress); // 使用后端的进度
-    };
+      if (response.success) {
+        const lyricData = response.data;
+        const parsedLyrics = parseLRC(lyricData.lyric);
+        if (parsedLyrics.length > 0) {
+          setLyrics(parsedLyrics);
+          setPlaybackSpeed(lyricData.speed);
+          if (!isDragging && !isProgressBarDragging) {
+            setCurrentProgress(lyricData.progress);
+          }
+          setTotalDuration(lyricData.duration);
+          setHasLyrics(true);
+          setError(null);
+        } else {
+          setHasLyrics(false);
+          setError('No lyrics available');
+        }
+      } else {
+        setHasLyrics(false);
+        setError('Failed to fetch lyric data');
+      }
+    } catch (error) {
+      console.error('Error fetching lyric data:', error);
+      setHasLyrics(false);
+      setError('An error occurred while fetching lyric data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isDragging, isProgressBarDragging]);
 
-    // 初次加载时请求一次数据
-    fetchData();
+  useEffect(() => {
+    fetchLyricData();
+    const intervalId = setInterval(fetchLyricData, 1000);
 
-    // 每 1 秒请求一次数据，获取最新的进度
-    const interval = setInterval(fetchData, 1000);
-    return () => clearInterval(interval); // 清理定时器
-  }, [getLyric]); // 当 getLyric 改变时重新执行
+    return () => clearInterval(intervalId);
+  }, [fetchLyricData]);
 
-  // 每次歌词数据或播放进度发生变化时更新当前歌词
   useEffect(() => {
     if (lyrics.length === 0) return;
+    const newIndex = lyrics.findIndex(lyric => lyric.time > currentProgress) - 1;
+    setCurrentLyricIndex(Math.max(0, newIndex));
+  }, [currentProgress, lyrics]);
 
-    const interval = setInterval(() => {
-      // 每 100 毫秒更新一次进度条和歌词
-      setCurrentProgress((prev) => {
-        const newProgress = prev + 0.1 * playbackSpeed;
-        // 根据当前进度计算歌词索引
-        const nextLyricIndex = lyrics.findIndex(lyric => lyric.time > newProgress);
-        
-        if (nextLyricIndex !== -1) {
-          setCurrentLyricIndex(nextLyricIndex - 1); // 设置当前歌词的索引
-        }
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
-        return newProgress;
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const container = containerRef.current;
+    if (!container) return;
+
+    const containerHeight = container.clientHeight;
+    const touchY = touch.clientY - container.getBoundingClientRect().top;
+    const centerY = containerHeight / 2;
+    const newOffset = touchY - centerY;
+
+    setDragOffset(newOffset);
+
+    const newIndex = Math.max(0, Math.min(Math.round(currentLyricIndex - newOffset / lineHeight), lyrics.length - 1));
+    setCurrentLyricIndex(newIndex);
+
+    if (lyrics[newIndex]) {
+      setCurrentProgress(lyrics[newIndex].time);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isDragging) {
+      setLyric({
+        songId: 1,
+        progress: currentProgress,
+        speed: playbackSpeed,
+        isPlaying: 1
       });
-    }, 100); // 每 100 毫秒更新一次进度条
-    return () => clearInterval(interval); // 清理定时器
-  }, [lyrics, playbackSpeed]); // 当歌词数据或播放速度变化时重新执行
+    }
+    setIsDragging(false);
+    setDragOffset(0);
+  };
 
-  const lineSpacing = 50; // 行间距
+  const updateProgressFromEvent = (clientX: number) => {
+    const progressBar = progressBarRef.current;
+    if (!progressBar) return;
+
+    const rect = progressBar.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const newProgress = percentage * totalDuration;
+
+    setCurrentProgress(newProgress);
+  };
+
+  const handleProgressBarTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsProgressBarDragging(true);
+    updateProgressFromEvent(e.touches[0].clientX);
+  };
+
+  const handleProgressBarTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isProgressBarDragging) return;
+    e.preventDefault();
+    updateProgressFromEvent(e.touches[0].clientX);
+  };
+
+  const handleProgressBarTouchEnd = () => {
+    if (isProgressBarDragging) {
+      setLyric({
+        songId: 1,
+        progress: currentProgress,
+        speed: playbackSpeed,
+        isPlaying: 1
+      });
+    }
+    setIsProgressBarDragging(false);
+  };
+
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  if (isLoading) {
+    return <div className={styles.loadingMessage}>加载中...</div>;
+  }
+
+  if (!hasLyrics || error) {
+    return <div className={styles.errorMessage}>无歌曲播放</div>;
+  }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.lyricsWrapper}>
-        <AnimatePresence initial={false}>
-          {/* 显示当前和前后几行歌词 */}
-          {lyrics.slice(currentLyricIndex, currentLyricIndex + 5).map((lyric, index) => {
-            return (
+    <div className={styles.mainContainer}>
+      <div 
+        className={styles.container} 
+        ref={containerRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className={styles.lyricsWrapper}>
+          <AnimatePresence initial={false}>
+            {lyrics.map((lyric, index) => (
               <motion.div
                 key={lyric.time}
-                className={`${styles.lyricLine} ${index === 2 ? styles.currentLyric : styles.otherLyric}`}
-                initial={index === 4 ? { opacity: 0, y: lineSpacing * 3 } : { opacity: 0, y: lineSpacing }}
+                className={`${styles.lyricLine} ${index === currentLyricIndex ? styles.currentLyric : styles.otherLyric}`}
+                initial={{ opacity: 0, y: lineHeight }}
                 animate={{
-                  opacity: index === 0 ? 0 : index === 2 ? 1 : 0.7,
-                  y: `${(index - 2) * lineSpacing}px`, // 根据当前索引调整歌词的位置
-                  scale: index === 2 ? 1.1 : 1, // 当前歌词放大一点
+                  opacity: Math.abs(index - currentLyricIndex) < 3 ? 1 : 0.3,
+                  y: (index - currentLyricIndex) * lineHeight - dragOffset,
                 }}
-                exit={index === 0 ?
-                  { opacity: 0, y: -lineSpacing, transition: { duration: 0.5 } } :
-                  { opacity: 0, y: -lineSpacing }
-                }
-                transition={{ duration: 0.5, ease: "easeInOut" }}
+                exit={{ opacity: 0, y: -lineHeight }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
               >
                 {lyric.text}
               </motion.div>
-            );
-          })}
-        </AnimatePresence>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+      <div className={styles.progressBarContainer}>
+        <div className={styles.timeDisplay}>{formatTime(currentProgress)}</div>
+        <div 
+          className={styles.progressBarWrapper}
+          ref={progressBarRef}
+          onTouchStart={handleProgressBarTouchStart}
+          onTouchMove={handleProgressBarTouchMove}
+          onTouchEnd={handleProgressBarTouchEnd}
+        >
+          <div 
+            className={styles.progressBar}
+            style={{ width: `${(currentProgress / totalDuration) * 100}%` }}
+          />
+          <div 
+            className={styles.progressBarHandle}
+            style={{ left: `${(currentProgress / totalDuration) * 100}%` }}
+          />
+        </div>
+        <div className={styles.timeDisplay}>{formatTime(totalDuration)}</div>
       </div>
     </div>
   );
 }
+
