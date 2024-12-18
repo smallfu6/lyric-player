@@ -76,35 +76,61 @@ func SetLyric(c *gin.Context) {
 		return
 	}
 
+	// 从缓存获取当前播放的歌曲
+	cachedSong, found := cace.Get("song")
+	if found {
+		currentSong := cachedSong.(SetLyricRequest)
+		// 如果切换新歌
+		if currentSong.SongId != req.SongId {
+			// 清理当前 goroutine
+			if cancelFunc != nil {
+				cancelFunc()
+				cancelFunc = nil
+			}
+			// 清理缓存
+			cace.Delete("song")
+		}
+	}
+
+	// 从数据库获取歌曲信息
 	song, err := models.GetSongById(req.SongId)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
+	// 更新请求中的歌曲信息
 	req.Lyric = song.Lyrics
 	req.Duration = song.Duration
 	req.Name = song.Name
 
-	// 判断是否是恢复播放或暂停
-	if req.IsPlaying == 1 { // 恢复播放
-		// 如果之前有进度更新的 goroutine 在运行，停止它
+	// 判断播放状态
+	switch req.IsPlaying {
+	case 1: // 恢复播放
+		// 停止之前的 goroutine
 		if cancelFunc != nil {
-			cancelFunc() // 停止旧的 goroutine
+			cancelFunc()
 		}
 
-		// 启动一个新的 goroutine 来更新进度
+		// 启动新的 goroutine
 		ctx, cancel := context.WithCancel(context.Background())
 		cancelFunc = cancel
 		go updateProgress(ctx, &req)
-	} else if req.IsPlaying == 0 { // 暂停
-		// 停止进度更新
+
+	case 0: // 暂停
 		if cancelFunc != nil {
-			cancelFunc() // 停止更新进度
+			cancelFunc()
 		}
+
+	case 2: // 停止播放
+		if cancelFunc != nil {
+			cancelFunc()
+			cancelFunc = nil // 清理取消函数
+		}
+		cace.Delete("song") // 清理缓存
 	}
 
-	// 将当前状态存入缓存
+	// 将当前歌曲状态存入缓存
 	cace.Set("song", req, cache.NoExpiration)
 
 	// 返回查询结果
@@ -120,28 +146,29 @@ func updateProgress(ctx context.Context, req *SetLyricRequest) {
 	for {
 		select {
 		case <-ctx.Done():
-			// 如果收到取消信号，退出 goroutine
+			// 收到取消信号，退出 goroutine
 			return
 		case <-ticker.C:
 			if req.IsPlaying == 0 {
-				// 如果暂停，停止进度更新
+				// 暂停，停止进度更新
 				continue
 			}
 
-			// 获取当前进度
+			// 更新进度
 			currentProgress := req.Progress
-			// 计算新的进度
 			newProgress := currentProgress + spread*float64(req.Speed)
-			// 更新进度，四舍五入保留两位小数
 			req.Progress = math.Round(newProgress*100) / 100
 
 			// 将更新后的 req 存储到缓存
 			cace.Set("song", *req, 0)
 
-			// 如果进度已经达到 100% 或者有其他停止条件，可以退出
+			// 检查是否播放完毕
 			if req.Progress >= req.Duration {
 				req.IsPlaying = 2 // 播放完毕
-				cace.Delete("song")
+				req.Progress = 1
+				req.Speed = 1
+				cace.Set("song", *req, 0)
+				// cace.Delete("song") // 清理缓存
 				return
 			}
 		}

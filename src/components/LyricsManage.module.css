@@ -5,7 +5,6 @@
   background-color: #000000;
   padding: 1rem;
   user-select: none;
-  touch-action: none;
 }
 
 .container {
@@ -15,6 +14,12 @@
   justify-content: center;
   overflow: hidden;
 }
+
+
+.title {
+  color: aquamarine;
+}
+
 
 .lyricsWrapper {
   width: 100%;
@@ -46,6 +51,14 @@
   opacity: 0.7;
 }
 
+.controlsContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .progressBarContainer {
   display: flex;
   align-items: center;
@@ -55,10 +68,9 @@
 
 .progressBarWrapper {
   flex: 1;
-  height: 8px;
-  background-color: #333;
-  border-radius: 4px;
-  cursor: pointer;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
   position: relative;
   margin: 0 1rem;
 }
@@ -66,7 +78,7 @@
 .progressBar {
   height: 100%;
   background-color: #4169E1;
-  border-radius: 4px;
+  border-radius: 2px;
   transition: width 0.1s linear;
 }
 
@@ -78,7 +90,6 @@
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  cursor: pointer;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
@@ -87,5 +98,12 @@
   color: #fff;
   min-width: 40px;
   text-align: center;
+}
+
+.loadingMessage,
+.errorMessage {
+  color: #fff;
+  text-align: center;
+  padding: 1rem;
 }
 

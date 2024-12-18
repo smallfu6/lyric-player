@@ -12,6 +12,6 @@ type SetLyricRequest struct {
 	Lyric     string  `json:"lyric"`
 	Duration  float64 `json:"duration"`
 	Progress  float64 `json:"progress"`
-	Speed     uint    `json:"speed"`
-	IsPlaying uint    `json:"is_playing"` // 0: 暂停 1: 在播放
+	Speed     float64 `json:"speed"`
+	IsPlaying uint    `json:"is_playing"` // 0: 暂停 1: 在播放 2:结束
 }

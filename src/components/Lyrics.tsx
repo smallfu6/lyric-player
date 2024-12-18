@@ -63,9 +63,6 @@ export default function Lyrics({ getLyric }: { getLyric: () => Promise<any>; }) 
   const lineSpacing = 120;
   const visibleLines = 5;
 
-  if (isLoading) {
-    return <div className={styles.loading}>Loading lyrics...</div>;
-  }
 
   return (
     <div className={styles.container}>
