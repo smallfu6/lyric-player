@@ -20,15 +20,15 @@
   position: absolute;
   width: 100%;
   text-align: center;
-  color: #4169E1; /* 蓝色 */
+  color: blue; /* 蓝色 */
 }
 
 .currentLyric {
-  font-size: 5.5rem;
+  font-size: 8rem;
   font-weight: bold;
 }
 
 .otherLyric {
-  font-size: 5.3rem;
+  font-size: 7.6rem;
 }
 

@@ -60,7 +60,7 @@ export default function Lyrics({ getLyric }: { getLyric: () => Promise<any>; }) 
     };
   }, [animate]);
 
-  const lineSpacing = 120;
+  const lineSpacing = 160;
   const visibleLines = 5;
 
 
